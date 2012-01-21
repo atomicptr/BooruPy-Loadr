@@ -16,8 +16,8 @@ import hashlib
 from threading import Thread
 from BooruPy.booru import BooruPy
 
-provider = "data/provider.js"
-gladefile = "data/gui.glade"
+provider = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/provider.js"
+gladefile = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/gui.glade"
 
 class BooruPyLoadr():
 	def __init__(self, providerlist, gladefilepath):
