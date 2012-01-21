@@ -51,6 +51,8 @@ class BooruPyLoadr():
 		for p in self._booru_handler.provider_list:
 			self._add_provider(p.name)
 
+		self._provider_field.set_model(self._provider_model)
+
 		self._window.connect("destroy", self._quit)
 		self._btn_get.connect("clicked",
 			self.btn_get_clicked,
@@ -67,7 +69,6 @@ class BooruPyLoadr():
 
 	def _add_provider(self, provider_name):
 		self._provider_model.append([provider_name])
-		self._provider_field.set_model(self._provider_model)
 	
 	def get_provider(self):
 		id = self._provider_field.get_active()
