@@ -1,7 +1,9 @@
 [BooruPy-Loadr](http://github.com/kasoki/BooruPy-Loadr)
 ===================================================
 
-BooruPy Loadr is a download tool for various image board "Booru" systems based on [BooruPy](http://github.com/kasoki/BooruPy). 
+BooruPy Loadr is a download tool for various image board "Booru" systems.
+
+Based on [BooruPy](http://github.com/kasoki/BooruPy). 
 
 Supporting
 ----------------------
