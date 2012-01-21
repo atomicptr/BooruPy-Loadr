@@ -13,7 +13,7 @@ import sys
 import os
 import urllib2
 import hashlib
-from threading import Thread
+from threading import Thread, Event
 from BooruPy.booru import BooruPy
 
 provider = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/provider.js"
@@ -24,6 +24,7 @@ class BooruPyLoadr():
 		self._providerlist = providerlist
 		self._gladefile = gladefilepath
 		self._wTree = gtk.glade.XML(self._gladefile)
+                self.StopEvent = Event() 
 
 		# get gui elements
 		self._window = self._wTree.get_widget("bpyloadr_window")
@@ -31,6 +32,8 @@ class BooruPyLoadr():
 		self._tags_field = self._wTree.get_widget("tags_field")
 		self._filepath_field = self._wTree.get_widget("filepath_field")
 		self._btn_get = self._wTree.get_widget("btn_get")
+                self._btn_stop = self._wTree.get_widget("btn_stop")
+                self._btn_stop.set_sensitive(False)
 		self._lbl_progress = self._wTree.get_widget("lbl_progress")
 		self._total_progress = self._wTree.get_widget("total_progress")
 		self._image_field = self._wTree.get_widget("latest_image")
@@ -57,6 +60,9 @@ class BooruPyLoadr():
 		self._btn_get.connect("clicked",
 			self.btn_get_clicked,
 			self._window)
+                self._btn_stop.connect("clicked",
+                        self.btn_stop_clicked,
+                        self._window)
 
 	def show(self):
 		self._window.show_all()
@@ -112,14 +118,18 @@ class BooruPyLoadr():
 		self._total_progress.set_fraction(value/100)
 
 	def toggle_button(self):
-		if self._btn_get.get_sensitive():
-			self._btn_get.set_sensitive(False)
-		else:
-			self._btn_get.set_sensitive(True)
+            sensitive = self._btn_get.get_sensitive()
+	    self._btn_get.set_sensitive(False if sensitive else True)
+            self._btn_stop.set_sensitive(sensitive)
 
 	def btn_get_clicked(self, widget, data=None):
 		self.toggle_button()
+                self.StopEvent.clear()
 		Thread(target=self._download).start()
+
+        def btn_stop_clicked(self, widget, data=None):
+            self.toggle_button()
+            self.StopEvent.set()
 
 	def _get_md5_checksum_from_file(self, path):
 		file = open(path, 'rb')
@@ -143,6 +153,8 @@ class BooruPyLoadr():
 			os.mkdir(path)
 
 		for i in provider.get_images(tags):
+                        if self.StopEvent.is_set():
+                            return
 			file_name = "%s-%s[%s].%s" % (
 				provider.shortname,
 				'-'.join(tags),
