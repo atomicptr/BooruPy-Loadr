@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=BooruPy Loadr
+Comment=Load any image from various image board systems
+Exec=/opt/boorupy-loadr/boorupy-loadr.py
+Icon=/opt/boorupy-loadr/data/128.png
+Type=Application
+Categories=Internet
+StartupNotify=true
+Terminal=false
