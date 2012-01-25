@@ -15,15 +15,16 @@ import urllib2
 import hashlib
 from threading import Thread, Event
 from BooruPy.booru import BooruPy
-from os.path import join, basename
+from os.path import join, basename, dirname, abspath
 from Queue import Queue
+
 
 class BooruPyLoadr():
     def __init__(self, providerlist, gladefilepath):
         self._providerlist = providerlist
         self._gladefile = gladefilepath
         self._wTree = gtk.glade.XML(self._gladefile)
-        self.StopEvent = Event() 
+        self.StopEvent = Event()
 
         # get gui elements
         self._window = self._wTree.get_widget("bpyloadr_window")
@@ -45,7 +46,7 @@ class BooruPyLoadr():
 
         # create model for provider
         self._provider_model = gtk.ListStore(gobject.TYPE_STRING)
-        
+
         # booruPy
         self._booru_handler = BooruPy(self._providerlist)
 
@@ -62,16 +63,16 @@ class BooruPyLoadr():
         self._btn_stop.connect("clicked",
             self.btn_stop_clicked,
             self._window)
-        
+
         self._init_ui_worker_thread()
 
     def _init_ui_worker_thread(self):
         self.UIWorkerQueue = Queue()
         self._ui_worker_thread = UiWorker(
             self.UIWorkerQueue,
-            self._image_field, 
-            self._lbl_progress, 
-            self._total_progress) 
+            self._image_field,
+            self._lbl_progress,
+            self._total_progress)
         self._ui_worker_thread.start()
 
     def show(self):
@@ -85,7 +86,7 @@ class BooruPyLoadr():
 
     def _add_provider(self, provider_name):
         self._provider_model.append([provider_name])
-    
+
     def get_provider(self):
         id = self._provider_field.get_active()
         return self._booru_handler.get_provider_by_id(int(id))
@@ -100,7 +101,7 @@ class BooruPyLoadr():
             path += "/"
 
         return path
-    
+
     def toggle_button(self):
         sensitive = self._btn_get.get_sensitive()
         self._btn_get.set_sensitive(False if sensitive else True)
@@ -146,7 +147,7 @@ class BooruPyLoadr():
                 i.url.split('.')[-1])
 
             target_path = join(path, file_name)
-            
+
             # check file md5 checksum
             if os.path.exists(target_path):
                 filemd5 = self._get_md5_checksum_from_file(target_path)
@@ -173,6 +174,7 @@ class BooruPyLoadr():
                 status.report_progress(file_size_dl * 100 / file_size)
         self.toggle_button()
 
+
 class ShowStatusTask(object):
     def __init__(self, ui_queue, file_path):
         self._queue = ui_queue
@@ -194,8 +196,15 @@ class ShowStatusTask(object):
     def get_status_message(self):
         return "Donloading %s [%3.2f%%]" % (self.FileName, self.PercentageDone)
 
+
 class UiWorker(Thread):
-    def __init__(self, ui_queue, img_field, progress_lable, progress_bar, *args, **kwargs):
+    def __init__(self,
+            ui_queue,
+            img_field,
+            progress_lable,
+            progress_bar,
+            *args,
+            **kwargs):
         Thread.__init__(self, *args, **kwargs)
         self.daemon = True
         self._ui_queue = ui_queue
@@ -220,7 +229,7 @@ class UiWorker(Thread):
         gtk.threads_enter()
         self._progress_lable.set_text(task.get_status_message())
         value = float(task.PercentageDone)
-        self._progress_bar.set_fraction(value/100)
+        self._progress_bar.set_fraction(value / 100)
         gtk.threads_leave()
 
     def _resize_image(self, path):
@@ -234,7 +243,9 @@ class UiWorker(Thread):
         pic_height = pic_height // factor
         pic_width = pic_width // factor
 
-        pb = pixbuf.scale_simple(pic_width, pic_height, gtk.gdk.INTERP_BILINEAR)
+        pb = pixbuf.scale_simple(pic_width,
+                pic_height,
+                gtk.gdk.INTERP_BILINEAR)
         return pb
 
     def _show_image(self, pb):
@@ -244,8 +255,8 @@ class UiWorker(Thread):
 
 if __name__ == "__main__":
 
-    provider = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/provider.js"
-    gladefile = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/gui.glade"
+    provider = dirname(abspath(sys.argv[0])) + "/data/provider.js"
+    gladefile = dirname(abspath(sys.argv[0])) + "/data/gui.glade"
 
     app = BooruPyLoadr(provider, gladefile)
     app.show()
