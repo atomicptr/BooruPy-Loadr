@@ -15,9 +15,8 @@ import urllib2
 import hashlib
 from threading import Thread, Event
 from BooruPy.booru import BooruPy
-
-provider = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/provider.js"
-gladefile = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/gui.glade"
+from os.path import join, basename
+from Queue import Queue
 
 class BooruPyLoadr():
     def __init__(self, providerlist, gladefilepath):
@@ -63,6 +62,17 @@ class BooruPyLoadr():
         self._btn_stop.connect("clicked",
             self.btn_stop_clicked,
             self._window)
+        
+        self._init_ui_worker_thread()
+
+    def _init_ui_worker_thread(self):
+        self.UIWorkerQueue = Queue()
+        self._ui_worker_thread = UiWorker(
+            self.UIWorkerQueue,
+            self._image_field, 
+            self._lbl_progress, 
+            self._total_progress) 
+        self._ui_worker_thread.start()
 
     def show(self):
         self._window.show_all()
@@ -91,32 +101,6 @@ class BooruPyLoadr():
 
         return path
     
-    def set_image(self, path):
-        try:
-            pixbuf = gtk.gdk.pixbuf_new_from_file(path)
-
-            pic_height = pixbuf.get_height()
-            pic_width = pixbuf.get_width()
-
-            factor = pic_height / 300
-
-            pic_height = pic_height // factor
-            pic_width = pic_width // factor
-
-            pixbuf = pixbuf.scale_simple(pic_width, pic_height, gtk.gdk.INTERP_BILINEAR)
-            gtk.threads_enter()
-            self._image_field.set_from_pixbuf(pixbuf)
-            gtk.threads_leave()
-        except:
-            pass
-
-    def set_progress_text(self, text):
-        self._lbl_progress.set_text(text)
-    
-    def set_progress(self, value):
-        value = float(value)
-        self._total_progress.set_fraction(value/100)
-
     def toggle_button(self):
         sensitive = self._btn_get.get_sensitive()
         self._btn_get.set_sensitive(False if sensitive else True)
@@ -125,7 +109,9 @@ class BooruPyLoadr():
     def btn_get_clicked(self, widget, data=None):
         self.toggle_button()
         self.StopEvent.clear()
-        Thread(target=self._download).start()
+        thread = Thread(target=self._download)
+        thread.daemon = True
+        thread.start()
 
     def btn_stop_clicked(self, widget, data=None):
         self.toggle_button()
@@ -144,11 +130,9 @@ class BooruPyLoadr():
     def _download(self):
         provider = self.get_provider()
         tags = self.get_tags()
-        path = "%s/%s-%s/" % (
-                self.get_filepath(),
-                provider.shortname,
-                "-".join(tags))
-        
+        folder_name = "%s-%s" % (provider.shortname, "-".join(tags))
+
+        path = join(self.get_filepath(), folder_name)
         if not os.path.exists(path):
             os.mkdir(path)
 
@@ -160,39 +144,108 @@ class BooruPyLoadr():
                 '-'.join(tags),
                 i.md5,
                 i.url.split('.')[-1])
+
+            target_path = join(path, file_name)
             
             # check file md5 checksum
-            if os.path.exists(path + file_name):
-                filemd5 = self._get_md5_checksum_from_file(
-                        path + file_name)
+            if os.path.exists(target_path):
+                filemd5 = self._get_md5_checksum_from_file(target_path)
                 if i.md5 == filemd5:
                     continue
 
             res = urllib2.urlopen(i.url)
-            file = open(path + file_name, 'wb')
+            file = open(target_path, 'wb')
             meta = res.info()
             file_size = int(meta.getheaders("Content-Length")[0])
 
             file_size_dl = 0
             block_sz = 8192
 
+            status = ShowStatusTask(self.UIWorkerQueue, target_path)
+
             while True:
                 buffer = res.read(block_sz)
                 if not buffer:
+                    status.finished()
                     break
                 file_size_dl += len(buffer)
                 file.write(buffer)
-                status = r"%3.2f%%" % (
-                        file_size_dl * 100 / file_size)
-                gtk.threads_enter()
-                self.set_progress_text(
-                        "Downloading %s [%s]" % (
-                            file_name, status))
-                self.set_progress(file_size_dl * 100/file_size)
-                gtk.threads_leave()
-            self.set_image(path + file_name)
+                status.report_progress(file_size_dl * 100 / file_size)
         self.toggle_button()
 
+class ShowStatusTask(object):
+    def __init__(self, ui_queue, file_path):
+        self._queue = ui_queue
+        self.FilePath = file_path
+        self.FileName = basename(file_path)
+        self.PercentageDone = 0
+        self.is_done = False
+        self._queue.put(self)
+
+    def report_progress(self, percentage_done):
+        self.PercentageDone = percentage_done
+        self._queue.put(self)
+
+    def finished(self):
+        self.PercentageDone = 100
+        self.is_done = True
+        self._queue.put(self)
+
+    def get_status_message(self):
+        return "Donloading %s [%3.2f%%]" % (self.FileName, self.PercentageDone)
+
+class UiWorker(Thread):
+    def __init__(self, ui_queue, img_field, progress_lable, progress_bar, *args, **kwargs):
+        Thread.__init__(self, *args, **kwargs)
+        self.daemon = True
+        self._ui_queue = ui_queue
+        self._img_field = img_field
+        self._progress_lable = progress_lable
+        self._progress_bar = progress_bar
+
+    def run(self):
+        while "there is stuff to do":
+            task = self._ui_queue.get()
+            if task.is_done:
+                try:
+                    self._report_progress(task)
+                    pb = self._resize_image(task.FilePath)
+                    self._show_image(pb)
+                except:
+                    print("Unexpected error:", sys.exc_info())
+            else:
+                self._report_progress(task)
+
+    def _report_progress(self, task):
+        gtk.threads_enter()
+        self._progress_lable.set_text(task.get_status_message())
+        value = float(task.PercentageDone)
+        self._progress_bar.set_fraction(value/100)
+        gtk.threads_leave()
+
+    def _resize_image(self, path):
+        pixbuf = gtk.gdk.pixbuf_new_from_file(path)
+
+        pic_height = pixbuf.get_height()
+        pic_width = pixbuf.get_width()
+
+        factor = pic_height / 300
+
+        pic_height = pic_height // factor
+        pic_width = pic_width // factor
+
+        pb = pixbuf.scale_simple(pic_width, pic_height, gtk.gdk.INTERP_BILINEAR)
+        return pb
+
+    def _show_image(self, pb):
+        gtk.threads_enter()
+        self._img_field.set_from_pixbuf(pb)
+        gtk.threads_leave()
+
 if __name__ == "__main__":
+
+    provider = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/provider.js"
+    gladefile = os.path.dirname(os.path.abspath(sys.argv[0])) + "/data/gui.glade"
+
     app = BooruPyLoadr(provider, gladefile)
     app.show()
