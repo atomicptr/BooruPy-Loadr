@@ -13,13 +13,20 @@ import sys
 import os
 import urllib2
 import hashlib
+import glib
 from threading import Thread, Event
 from BooruPy.booru import BooruPy
 from os.path import join, basename, dirname, abspath
-from Queue import Queue
+from Queue import Queue, Empty
+
+
+class UiActions(object):
+    image = 0
+    file_progress = 1
 
 
 class BooruPyLoadr():
+
     def __init__(self, providerlist, gladefilepath):
         self._providerlist = providerlist
         self._gladefile = gladefilepath
@@ -31,9 +38,11 @@ class BooruPyLoadr():
         self._provider_field = self._wTree.get_widget("provider_field")
         self._tags_field = self._wTree.get_widget("tags_field")
         self._filepath_field = self._wTree.get_widget("filepath_field")
+        
         self._btn_get = self._wTree.get_widget("btn_get")
         self._btn_stop = self._wTree.get_widget("btn_stop")
         self._btn_stop.set_sensitive(False)
+
         self._lbl_progress = self._wTree.get_widget("lbl_progress")
         self._total_progress = self._wTree.get_widget("total_progress")
         self._image_field = self._wTree.get_widget("latest_image")
@@ -65,14 +74,24 @@ class BooruPyLoadr():
             self._window)
 
         self._init_ui_worker_thread()
+        glib.idle_add(self._ui_idle_change)
+
+    def _ui_idle_change(self):
+        try:
+            item = self.ui_queue.get_nowait()
+        except:
+            return True
+        if item[0] == UiActions.image:
+            self._image_field.set_from_pixbuf(item[1])
+        elif item[0] == UiActions.file_progress:
+            self._lbl_progress.set_text(item[1])
+            self._total_progress.set_fraction(item[2])
+        return True
 
     def _init_ui_worker_thread(self):
-        self.UIWorkerQueue = Queue()
-        self._ui_worker_thread = UiWorker(
-            self.UIWorkerQueue,
-            self._image_field,
-            self._lbl_progress,
-            self._total_progress)
+        self._ui_worker_thread = UiWorker()
+        self.ui_queue = self._ui_worker_thread.ui_queue
+        self.ui_worker_queue = self._ui_worker_thread.ui_worker_queue
         self._ui_worker_thread.start()
 
     def show(self):
@@ -80,7 +99,7 @@ class BooruPyLoadr():
         gtk.gdk.threads_init()
         gtk.main()
 
-    def _quit(self, e):
+    def _quit(self, event):
         gtk.main_quit()
         sys.exit()
 
@@ -162,7 +181,7 @@ class BooruPyLoadr():
             file_size_dl = 0
             block_sz = 8192
 
-            status = ShowStatusTask(self.UIWorkerQueue, target_path)
+            status = ShowStatusTask(self.ui_worker_queue, target_path)
 
             while True:
                 buffer = res.read(block_sz)
@@ -198,23 +217,17 @@ class ShowStatusTask(object):
 
 
 class UiWorker(Thread):
-    def __init__(self,
-            ui_queue,
-            img_field,
-            progress_lable,
-            progress_bar,
-            *args,
-            **kwargs):
-        Thread.__init__(self, *args, **kwargs)
+
+    def __init__(self):
+        super(UiWorker, self).__init__()
         self.daemon = True
-        self._ui_queue = ui_queue
-        self._img_field = img_field
-        self._progress_lable = progress_lable
-        self._progress_bar = progress_bar
+
+        self.ui_queue = Queue()
+        self.ui_worker_queue = Queue()
 
     def run(self):
         while "there is stuff to do":
-            task = self._ui_queue.get()
+            task = self.ui_worker_queue.get()
             if task.is_done:
                 try:
                     self._report_progress(task)
@@ -226,11 +239,10 @@ class UiWorker(Thread):
                 self._report_progress(task)
 
     def _report_progress(self, task):
-        gtk.threads_enter()
-        self._progress_lable.set_text(task.get_status_message())
-        value = float(task.PercentageDone)
-        self._progress_bar.set_fraction(value / 100)
-        gtk.threads_leave()
+        value = float(task.PercentageDone) / 100
+        self.ui_queue.put((UiActions.file_progress, 
+            task.get_status_message(),
+            value))
 
     def _resize_image(self, path):
         pixbuf = gtk.gdk.pixbuf_new_from_file(path)
@@ -249,12 +261,9 @@ class UiWorker(Thread):
         return pb
 
     def _show_image(self, pb):
-        gtk.threads_enter()
-        self._img_field.set_from_pixbuf(pb)
-        gtk.threads_leave()
+        self.ui_queue.put((UiActions.image, pb))
 
 if __name__ == "__main__":
-
     provider = dirname(abspath(sys.argv[0])) + "/data/provider.js"
     gladefile = dirname(abspath(sys.argv[0])) + "/data/gui.glade"
 
