@@ -30,22 +30,22 @@ class BooruPyLoadr():
     def __init__(self, providerlist, gladefilepath):
         self._providerlist = providerlist
         self._gladefile = gladefilepath
-        self._wTree = gtk.glade.XML(self._gladefile)
-        self.StopEvent = Event()
+        self._widget_tree = gtk.glade.XML(self._gladefile)
+        self.stop_event = Event()
 
         # get gui elements
-        self._window = self._wTree.get_widget("bpyloadr_window")
-        self._provider_field = self._wTree.get_widget("provider_field")
-        self._tags_field = self._wTree.get_widget("tags_field")
-        self._filepath_field = self._wTree.get_widget("filepath_field")
-        
-        self._btn_get = self._wTree.get_widget("btn_get")
-        self._btn_stop = self._wTree.get_widget("btn_stop")
+        self._window = self._widget_tree.get_widget("bpyloadr_window")
+        self._provider_field = self._widget_tree.get_widget("provider_field")
+        self._tags_field = self._widget_tree.get_widget("tags_field")
+        self._filepath_field = self._widget_tree.get_widget("filepath_field")
+
+        self._btn_get = self._widget_tree.get_widget("btn_get")
+        self._btn_stop = self._widget_tree.get_widget("btn_stop")
         self._btn_stop.set_sensitive(False)
 
-        self._lbl_progress = self._wTree.get_widget("lbl_progress")
-        self._total_progress = self._wTree.get_widget("total_progress")
-        self._image_field = self._wTree.get_widget("latest_image")
+        self._lbl_progress = self._widget_tree.get_widget("lbl_progress")
+        self._total_progress = self._widget_tree.get_widget("total_progress")
+        self._image_field = self._widget_tree.get_widget("latest_image")
 
         # cell renderer
         self._cell_renderer = gtk.CellRendererText()
@@ -60,8 +60,8 @@ class BooruPyLoadr():
         self._booru_handler = BooruPy(self._providerlist)
 
         # fill provider list
-        for p in self._booru_handler.provider_list:
-            self._add_provider(p.name)
+        for item in self._booru_handler.provider_list:
+            self._add_provider(item.name)
 
         self._provider_field.set_model(self._provider_model)
 
@@ -79,7 +79,7 @@ class BooruPyLoadr():
     def _ui_idle_change(self):
         try:
             item = self.ui_queue.get_nowait()
-        except:
+        except Empty:
             return True
         if item[0] == UiActions.image:
             self._image_field.set_from_pixbuf(item[1])
@@ -107,8 +107,8 @@ class BooruPyLoadr():
         self._provider_model.append([provider_name])
 
     def get_provider(self):
-        id = self._provider_field.get_active()
-        return self._booru_handler.get_provider_by_id(int(id))
+        provider_id = self._provider_field.get_active()
+        return self._booru_handler.get_provider_by_id(int(provider_id))
 
     def get_tags(self):
         return self._tags_field.get_text().split(' ')
@@ -128,20 +128,20 @@ class BooruPyLoadr():
 
     def btn_get_clicked(self, widget, data=None):
         self.toggle_button()
-        self.StopEvent.clear()
+        self.stop_event.clear()
         thread = Thread(target=self._download)
         thread.daemon = True
         thread.start()
 
     def btn_stop_clicked(self, widget, data=None):
         self.toggle_button()
-        self.StopEvent.set()
+        self.stop_event.set()
 
     def _get_md5_checksum_from_file(self, path):
-        file = open(path, 'rb')
+        _file = open(path, 'rb')
         md5 = hashlib.md5()
         while True:
-            data = file.read(8192)
+            data = _file.read(8192)
             if not data:
                 break
             md5.update(data)
@@ -157,7 +157,7 @@ class BooruPyLoadr():
             os.mkdir(path)
 
         for i in provider.get_images(tags):
-            if self.StopEvent.is_set():
+            if self.stop_event.is_set():
                 return
             file_name = "%s-%s[%s].%s" % (
                 provider.shortname,
@@ -174,7 +174,7 @@ class BooruPyLoadr():
                     continue
 
             res = urllib2.urlopen(i.url)
-            file = open(target_path, 'wb')
+            _file = open(target_path, 'wb')
             meta = res.info()
             file_size = int(meta.getheaders("Content-Length")[0])
 
@@ -189,7 +189,7 @@ class BooruPyLoadr():
                     status.finished()
                     break
                 file_size_dl += len(buffer)
-                file.write(buffer)
+                _file.write(buffer)
                 status.report_progress(file_size_dl * 100 / file_size)
         self.toggle_button()
 
@@ -240,7 +240,7 @@ class UiWorker(Thread):
 
     def _report_progress(self, task):
         value = float(task.PercentageDone) / 100
-        self.ui_queue.put((UiActions.file_progress, 
+        self.ui_queue.put((UiActions.file_progress,
             task.get_status_message(),
             value))
 
