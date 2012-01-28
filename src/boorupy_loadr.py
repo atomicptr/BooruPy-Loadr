@@ -264,7 +264,7 @@ class UiWorker(Thread):
         self.ui_queue.put((UiActions.image, pb))
 
 if __name__ == "__main__":
-    provider = dirname(abspath(sys.argv[0])) + "/data/provider.js"
+    provider = dirname(abspath(sys.argv[0])) + "/data/provider.json"
     gladefile = dirname(abspath(sys.argv[0])) + "/data/gui.glade"
 
     app = BooruPyLoadr(provider, gladefile)
