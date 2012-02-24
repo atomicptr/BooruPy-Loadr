@@ -14,8 +14,8 @@ import os
 import urllib2
 import hashlib
 import glib
+from BooruPy import BooruManager
 from threading import Thread, Event
-from BooruPy.booru import BooruPy
 from os.path import join, basename, dirname, abspath
 from Queue import Queue, Empty
 
@@ -56,8 +56,8 @@ class BooruPyLoadr():
         # create model for provider
         self._provider_model = gtk.ListStore(gobject.TYPE_STRING)
 
-        # booruPy
-        self._booru_handler = BooruPy(self._providerlist)
+        # initialize BooruPy
+        self._booru_handler = BooruManager(self._providerlist, False)
 
         # fill provider list
         for item in self._booru_handler.provider_list:
@@ -159,9 +159,8 @@ class BooruPyLoadr():
         for i in provider.get_images(tags):
             if self.stop_event.is_set():
                 return
-            file_name = "%s-%s[%s].%s" % (
+            file_name = "%s[%s].%s" % (
                 provider.shortname,
-                '-'.join(tags),
                 i.md5,
                 i.url.split('.')[-1])
 
@@ -264,7 +263,7 @@ class UiWorker(Thread):
         self.ui_queue.put((UiActions.image, pb))
 
 if __name__ == "__main__":
-    provider = dirname(abspath(sys.argv[0])) + "/data/provider.json"
+    provider = dirname(abspath(sys.argv[0])) + "/data/provider.js"
     gladefile = dirname(abspath(sys.argv[0])) + "/data/gui.glade"
 
     app = BooruPyLoadr(provider, gladefile)
