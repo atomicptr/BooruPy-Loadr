@@ -196,23 +196,23 @@ class BooruPyLoadr():
 class ShowStatusTask(object):
     def __init__(self, ui_queue, file_path):
         self._queue = ui_queue
-        self.FilePath = file_path
-        self.FileName = basename(file_path)
-        self.PercentageDone = 0
+        self.file_path = file_path
+        self.file_name = basename(file_path)
+        self.percentage_done = 0
         self.is_done = False
         self._queue.put(self)
 
     def report_progress(self, percentage_done):
-        self.PercentageDone = percentage_done
+        self.percentage_done = percentage_done
         self._queue.put(self)
 
     def finished(self):
-        self.PercentageDone = 100
+        self.percentage_done = 100
         self.is_done = True
         self._queue.put(self)
 
     def get_status_message(self):
-        return "Donloading %s [%3.2f%%]" % (self.FileName, self.PercentageDone)
+        return "Donloading %s [%3.2f%%]" % (self.file_name, self.percentage_done)
 
 
 class UiWorker(Thread):
@@ -238,7 +238,7 @@ class UiWorker(Thread):
                 self._report_progress(task)
 
     def _report_progress(self, task):
-        value = float(task.PercentageDone) / 100
+        value = float(task.percentage_done) / 100
         self.ui_queue.put((UiActions.file_progress,
             task.get_status_message(),
             value))
