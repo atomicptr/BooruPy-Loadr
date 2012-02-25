@@ -229,9 +229,11 @@ class UiWorker(Thread):
             task = self.ui_worker_queue.get()
             if task.is_done:
                 try:
-                    self._report_progress(task)
-                    pb = self._resize_image(task.file_path)
-                    self._show_image(pb)
+                    pass
+                    # TODO: add option to enable/disable image preview
+                    #self._report_progress(task)
+                    #pb = self._resize_image(task.file_path)
+                    #self._show_image(pb)
                 except:
                     print("Unexpected error:", sys.exc_info())
             else:
