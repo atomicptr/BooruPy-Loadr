@@ -5,7 +5,7 @@ setup(
 	name = "BooruPy Loadr",
 	version = "1.2",
 	keywords = ['pictures', 'anime', 'booru', 'gelbooru', 'danbooru', 'image',
-		'board', 'imageboard', 'download', 'tool']
+		'board', 'imageboard', 'download', 'tool'],
 	author = 'Christopher Kaster',
 	author_email = 'ikasoki@gmail.com',
 	maintainer = 'Christopher Kaster',
