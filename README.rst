@@ -1,9 +1,9 @@
-[BooruPy-Loadr](http://github.com/kasoki/BooruPy-Loadr)
+BooruPy-Loadr
 ===================================================
 
 BooruPy Loadr is a download tool for various image board "Booru" systems.
 
-Based on [BooruPy](http://github.com/kasoki/BooruPy). 
+Based on BooruPy_
 
 Supporting
 ----------------------
@@ -13,4 +13,7 @@ Supporting
 License?
 ----------------------
 
-BooruPy Loadr is licensed under the terms of [GNU General Public License v3](http://www.gnu.org/copyleft/gpl.html).
+BooruPy Loadr is licensed under the terms of GPLv3_.
+
+.. _BooruPy: http://github.com/Kasoki/BooruPy
+.. _GPLv3: http://www.gnu.org/copyleft/gpl.html
