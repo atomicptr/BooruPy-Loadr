@@ -10,7 +10,7 @@ setup(
 	author_email = 'ikasoki@gmail.com',
 	maintainer = 'Christopher Kaster',
 	maintainer_email = 'ikasoki@gmail.com',
-	packages = ['BooruPy'],
+	install_requires = ['BooruPy>=0.1.5'],
 	url = 'http://github.com/Kasoki/BooruPy-Loadr',
 	license = 'GNU GENERAL PUBLIC LICENSE v3',
 	description = 'BooruPy Loadr is a download tool for various image board "Booru" systems.',
@@ -22,5 +22,8 @@ setup(
 		'Operating System :: OS Independent',
 		'Programming Language :: Python :: 2.7',
 		'Topic :: Internet'
+	],
+	data_files = [
+		('data', '*')
 	]
 )
