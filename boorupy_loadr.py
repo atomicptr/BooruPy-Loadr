@@ -230,7 +230,7 @@ class UiWorker(Thread):
             if task.is_done:
                 try:
                     self._report_progress(task)
-                    pb = self._resize_image(task.FilePath)
+                    pb = self._resize_image(task.file_path)
                     self._show_image(pb)
                 except:
                     print("Unexpected error:", sys.exc_info())
