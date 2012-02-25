@@ -168,7 +168,9 @@ class BooruPyLoadr():
 
             # check file md5 checksum
             if os.path.exists(target_path):
+                status = MD5StatusTask(self.ui_worker_queue, file_name)
                 filemd5 = self._get_md5_checksum_from_file(target_path)
+                status.report_progress(100)
                 if i.md5 == filemd5:
                     continue
 
@@ -214,6 +216,25 @@ class ShowStatusTask(object):
     def get_status_message(self):
         return "Donloading %s [%3.2f%%]" % (self.file_name, self.percentage_done)
 
+class MD5StatusTask(object):
+    def __init__(self, ui_queue, file_name):
+        self._queue = ui_queue
+        self._file_name = file_name
+        self.percentage_done = 0
+        self.is_done = False
+        self._queue.put(self)
+
+    def report_progress(self, percentage_done):
+        self.percentage_done = percentage_done
+        self._queue.put(self)
+
+    def finished(self):
+        self.percentage_done = 100
+        self.is_done = True
+        self._queue.put(self)
+
+    def get_status_message(self):
+        return "Checking md5 checksum from %s" % (self._file_name)
 
 class UiWorker(Thread):
 
