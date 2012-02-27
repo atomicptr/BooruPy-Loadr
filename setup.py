@@ -11,6 +11,7 @@ setup(
     maintainer='Christopher Kaster',
     maintainer_email='ikasoki@gmail.com',
     requires=['BooruPy'],
+    scripts=['boorupy_loadr.py'],
     url='http://github.com/Kasoki/BooruPy-Loadr',
     license='GNU GENERAL PUBLIC LICENSE v3',
     description='BooruPy Loadr is a download tool for various image board "Booru" systems.',
@@ -20,11 +21,13 @@ setup(
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: End Users/Desktop',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python',
         'Topic :: Internet'
     ],
     data_files=[
-        ('data', ['data/banner.png', 'data/gui.glade', 'data/icon.ico',
-            'data/icon.png', 'data/provider.js'])
+        ('Scripts/data', ['data/banner.png', 'data/gui.glade', 'data/icon.ico',
+            'data/icon.png', 'data/provider.js']),
+        ('', ['LICENSE']),
+        ('', ['README.rst'])
     ]
 )
