@@ -216,7 +216,9 @@ class ShowStatusTask(object):
     def get_status_message(self):
         return "Donloading %s [%3.2f%%]" % (self.file_name, self.percentage_done)
 
+
 class MD5StatusTask(object):
+
     def __init__(self, ui_queue, file_name):
         self._queue = ui_queue
         self._file_name = file_name
@@ -235,6 +237,7 @@ class MD5StatusTask(object):
 
     def get_status_message(self):
         return "Checking md5 checksum from %s" % (self._file_name)
+
 
 class UiWorker(Thread):
 
