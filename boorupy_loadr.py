@@ -214,7 +214,8 @@ class ShowStatusTask(object):
         self._queue.put(self)
 
     def get_status_message(self):
-        return "Donloading %s [%3.2f%%]" % (self.file_name, self.percentage_done)
+        return "Donloading %s [%3.2f%%]" % (
+            self.file_name, self.percentage_done)
 
 
 class MD5StatusTask(object):

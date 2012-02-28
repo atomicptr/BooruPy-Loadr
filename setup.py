@@ -14,7 +14,8 @@ setup(
     scripts=['boorupy_loadr.py'],
     url='http://github.com/Kasoki/BooruPy-Loadr',
     license='GNU GENERAL PUBLIC LICENSE v3',
-    description='BooruPy Loadr is a download tool for various image board "Booru" systems.',
+    description='BooruPy Loadr is a download tool for various ' +
+        'image board "Booru" systems.',
     long_description=open('README.rst').read(),
     platforms='OS Independent',
     classifiers=[
