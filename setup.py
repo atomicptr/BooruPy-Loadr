@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name="BooruPy Loadr",
@@ -10,7 +10,7 @@ setup(
     author_email='ikasoki@gmail.com',
     maintainer='Christopher Kaster',
     maintainer_email='ikasoki@gmail.com',
-    requires=['BooruPy'],
+    install_requires=['BooruPy>=0.1.6'],
     scripts=['boorupy_loadr.py'],
     url='http://github.com/Kasoki/BooruPy-Loadr',
     license='GNU GENERAL PUBLIC LICENSE v3',
